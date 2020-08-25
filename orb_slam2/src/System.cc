@@ -29,7 +29,9 @@ namespace ORB_SLAM2
 {
 
 System::System(const string strVocFile, const eSensor sensor, ORBParameters& parameters,
-               const std::string & map_file, bool load_map): // map serialization addition
+               const std::string & map_file, bool load_map, std::function<bool(const double &, const double &, const cv::Mat &,
+                            const cv::Mat &)>
+             loopClosureSendFunc): // map serialization addition
                mSensor(sensor), mbReset(false),mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false),
                map_file(map_file), load_map(load_map)
 {
@@ -118,6 +120,7 @@ System::System(const string strVocFile, const eSensor sensor, ORBParameters& par
 
     mpLoopCloser->SetTracker(mpTracker);
     mpLoopCloser->SetLocalMapper(mpLocalMapper);
+    mpLoopCloser->SetLoopClosureSendFunc(loopClosureSendFunc);
 
     currently_localizing_only_ = false;
 }

@@ -70,8 +70,9 @@ void LoopClosing::Run()
                // In the stereo/RGBD case s=1
                if(ComputeSim3())
                {
-                   // Perform loop fusion and pose graph optimization
-                   CorrectLoop();
+                 SendLoopClosureMsg();
+                 // Perform loop fusion and pose graph optimization
+                 CorrectLoop();
                }
             }
         }
@@ -335,6 +336,9 @@ bool LoopClosing::ComputeSim3()
                     mScw = Converter::toCvMat(mg2oScw);
 
                     mvpCurrentMatchedPoints = vpMapPointMatches;
+
+                    mRcm = R;
+                    mTcm = t;
                     break;
                 }
             }
@@ -772,5 +776,16 @@ bool LoopClosing::isFinished()
     return mbFinished;
 }
 
+void LoopClosing::SetLoopClosureSendFunc(
+    std::function<bool(const double &, const double &, const cv::Mat &,
+                       const cv::Mat &)>
+        LoopClosureSendFunc) {
+  mLoopClosureSendFunc = LoopClosureSendFunc;
+}
+
+bool LoopClosing::SendLoopClosureMsg() {
+  return mLoopClosureSendFunc(mpCurrentKF->mTimeStamp, mpMatchedKF->mTimeStamp,
+                              mRcm, mTcm);
+}
 
 } //namespace ORB_SLAM

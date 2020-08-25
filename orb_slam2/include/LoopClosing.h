@@ -144,6 +144,20 @@ protected:
 
 
     bool mnFullBAIdx;
+
+  public:
+    void
+    SetLoopClosureSendFunc(std::function<bool(const double &, const double &,
+                                              const cv::Mat &, const cv::Mat &)>
+                               LoopClosureSendFunc);
+
+  protected:
+    bool SendLoopClosureMsg();
+    std::function<bool(const double &, const double &, const cv::Mat &,
+                       const cv::Mat &)>
+        mLoopClosureSendFunc;
+    cv::Mat mRcm;
+    cv::Mat mTcm;
 };
 
 } //namespace ORB_SLAM
