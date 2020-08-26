@@ -70,6 +70,9 @@ void LoopClosing::Run()
                // In the stereo/RGBD case s=1
                if(ComputeSim3())
                {
+                 cout << "loop clousure detected! between "
+                      << mpCurrentKF->mTimeStamp << " "
+                      << mpMatchedKF->mTimeStamp << endl;
                  SendLoopClosureMsg();
                  // Perform loop fusion and pose graph optimization
                  CorrectLoop();
