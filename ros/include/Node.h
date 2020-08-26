@@ -49,7 +49,10 @@
 class Node
 {
   public:
-    Node (ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &node_handle, image_transport::ImageTransport &image_transport);
+    Node(ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &node_handle,
+         image_transport::ImageTransport &image_transport,
+         ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func =
+             nullptr);
     ~Node ();
     void Init ();
 
@@ -95,6 +98,8 @@ class Node
     bool publish_tf_param_;
     bool publish_pose_param_;
     int min_observations_per_point_;
+
+    ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func_;
 };
 
 #endif //ORBSLAM2_ROS_NODE_H_

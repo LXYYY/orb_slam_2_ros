@@ -1,32 +1,60 @@
 #include "RGBDNode.h"
 
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "RGBD");
-    ros::start();
+#include <voxgraph_msgs/LoopClosure.h>
 
-    if(argc > 1) {
-        ROS_WARN ("Arguments supplied via command line are neglected.");
-    }
+class LoopClosureSendFunctor {
+public:
+  LoopClosureSendFunctor(const ros::NodeHandle &node_handle)
+      : node_handle_(node_handle) {
+    loop_closure_pub_ = node_handle_.advertise<voxgraph_msgs::LoopClosure>(
+        "loop_closure_output", 1);
+  }
+  bool operator()(const double & from_timestamp, const double & to_timestamp, const cv::Mat &R,
+                  const cv::Mat &t) {
+                    voxgraph_msgs::LoopClosure loop_closure_msg;
+                    loop_closure_msg.from_timestamp=ros::Time(from_timestamp);
+                    loop_closure_msg.to_timestamp=ros::Time(to_timestamp);
+                  }
 
-    ros::NodeHandle node_handle;
+private:
+  ros::NodeHandle node_handle_;
+  ros::Publisher loop_closure_pub_;
+};
 
-    // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    image_transport::ImageTransport image_transport (node_handle);
+int main(int argc, char **argv) {
+  ros::init(argc, argv, "RGBD");
+  ros::start();
 
-    RGBDNode node (ORB_SLAM2::System::RGBD, node_handle, image_transport);
+  if (argc > 1) {
+    ROS_WARN("Arguments supplied via command line are neglected.");
+  }
 
-    node.Init();
+  ros::NodeHandle node_handle;
 
-    ros::spin();
+  // Create SLAM system. It initializes all system threads and gets ready to
+  // process frames.
+  image_transport::ImageTransport image_transport(node_handle);
 
-    ros::shutdown();
+  LoopClosureSendFunctor loop_closure_send_functor(node_handle);
+  ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func =
+      loop_closure_send_functor;
+  RGBDNode node(ORB_SLAM2::System::RGBD, node_handle, image_transport,
+                loop_closure_send_func);
 
-    return 0;
+  node.Init();
+
+  ros::spin();
+
+  ros::shutdown();
+
+  return 0;
 }
 
-
-RGBDNode::RGBDNode (const ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &node_handle, image_transport::ImageTransport &image_transport) : Node (sensor, node_handle, image_transport) {
+RGBDNode::RGBDNode(
+    const ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &node_handle,
+    image_transport::ImageTransport &image_transport,
+    ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func)
+    : Node(sensor, node_handle, image_transport, loop_closure_send_func) {
   rgb_subscriber_ = new message_filters::Subscriber<sensor_msgs::Image> (node_handle, "/camera/rgb/image_raw", 1);
   depth_subscriber_ = new message_filters::Subscriber<sensor_msgs::Image> (node_handle, "/camera/depth_registered/image_raw", 1);
   camera_info_topic_ = "/camera/rgb/camera_info";
@@ -34,7 +62,6 @@ RGBDNode::RGBDNode (const ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &no
   sync_ = new message_filters::Synchronizer<sync_pol> (sync_pol(10), *rgb_subscriber_, *depth_subscriber_);
   sync_->registerCallback(boost::bind(&RGBDNode::ImageCallback, this, _1, _2));
 }
-
 
 RGBDNode::~RGBDNode () {
   delete rgb_subscriber_;

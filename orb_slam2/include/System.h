@@ -57,15 +57,18 @@ public:
         RGBD=2
     };
 
-public:
+    typedef std::function<bool(const double &, const double &, const cv::Mat &,
+                               const cv::Mat &)>
+        fLoopClosureSendFunc;
+
+  public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
   System(const string strVocFile, const eSensor sensor,
          ORBParameters &parameters, const std::string &map_file = "",
          bool load_map = false,
-         std::function<bool(const double &, const double &, const cv::Mat &,
-                            const cv::Mat &)>
-             loopClosureSendFunc = nullptr); // map serialization addition
+         fLoopClosureSendFunc loopClosureSendFunc =
+             nullptr); // map serialization addition
 
   // Process the given stereo frame. Images must be synchronized and rectified.
   // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to

@@ -2,13 +2,16 @@
 
 #include <iostream>
 
-Node::Node (ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &node_handle, image_transport::ImageTransport &image_transport) :  image_transport_(image_transport) {
+Node::Node(ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &node_handle,
+           image_transport::ImageTransport &image_transport,
+           ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func)
+    : image_transport_(image_transport),
+      loop_closure_send_func_(loop_closure_send_func) {
   name_of_node_ = ros::this_node::getName();
   node_handle_ = node_handle;
   min_observations_per_point_ = 2;
   sensor_ = sensor;
 }
-
 
 Node::~Node () {
   // Stop all threads
@@ -35,7 +38,7 @@ void Node::Init () {
    ORB_SLAM2::ORBParameters parameters;
    LoadOrbParameters (parameters);
 
-  orb_slam_ = new ORB_SLAM2::System (voc_file_name_param_, sensor_, parameters, map_file_name_param_, load_map_param_);
+  orb_slam_ = new ORB_SLAM2::System (voc_file_name_param_, sensor_, parameters, map_file_name_param_, load_map_param_, loop_closure_send_func_);
 
   service_server_ = node_handle_.advertiseService(name_of_node_+"/save_map", &Node::SaveMapSrv, this);
 

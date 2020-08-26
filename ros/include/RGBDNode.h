@@ -43,7 +43,10 @@
 class RGBDNode : public Node
 {
   public:
-    RGBDNode (const ORB_SLAM2::System::eSensor sensor, ros::NodeHandle &node_handle, image_transport::ImageTransport &image_transport);
+    RGBDNode(const ORB_SLAM2::System::eSensor sensor,
+             ros::NodeHandle &node_handle,
+             image_transport::ImageTransport &image_transport,
+             ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func);
     ~RGBDNode ();
     void ImageCallback (const sensor_msgs::ImageConstPtr& msgRGB,const sensor_msgs::ImageConstPtr& msgD);
 
