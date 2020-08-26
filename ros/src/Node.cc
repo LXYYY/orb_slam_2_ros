@@ -56,6 +56,9 @@ void Node::Init () {
   if (publish_pose_param_) {
     pose_publisher_ = node_handle_.advertise<geometry_msgs::PoseStamped> (name_of_node_+"/pose", 1);
   }
+
+  tf_timer_ = node_handle_.createTimer(
+      ros::Duration(0.01), &Node::PublishPositionAsTransformCallback, this);
 }
 
 
@@ -63,8 +66,8 @@ void Node::Update () {
   cv::Mat position = orb_slam_->GetCurrentPosition();
 
   if (!position.empty()) {
-    PublishPositionAsTransform (position);
-
+    // PublishPositionAsTransform (position);
+    position_ = position;
     if (publish_pose_param_) {
       PublishPositionAsPoseStamped (position);
     }
@@ -88,8 +91,9 @@ void Node::PublishMapPoints (std::vector<ORB_SLAM2::MapPoint*> map_points) {
 void Node::PublishPositionAsTransform (cv::Mat position) {
   if(publish_tf_param_){
       tf::Transform transform = TransformFromMat (position);
-      static tf::TransformBroadcaster tf_broadcaster;
-      tf_broadcaster.sendTransform(tf::StampedTransform(transform, current_frame_time_, map_frame_id_param_, camera_frame_id_param_));
+      tf_broadcaster_.sendTransform(
+          tf::StampedTransform(transform, current_frame_time_, map_frame_id_param_,
+                               camera_frame_id_param_));
   }
 }
 
@@ -279,4 +283,9 @@ void Node::LoadOrbParameters (ORB_SLAM2::ORBParameters& parameters) {
     ROS_ERROR ("Failed to get camera calibration parameters from the launch file.");
     throw std::runtime_error("No cam calibration");
   }
+}
+
+void Node::PublishPositionAsTransformCallback(const ros::TimerEvent &event) {
+  if (!position_.empty())
+    PublishPositionAsTransform(position_);
 }

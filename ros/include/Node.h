@@ -100,6 +100,10 @@ class Node
     int min_observations_per_point_;
 
     ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func_;
+    ros::Timer tf_timer_;
+    tf::TransformBroadcaster tf_broadcaster_;
+    cv::Mat position_;
+    void PublishPositionAsTransformCallback(const ros::TimerEvent& event);
 };
 
 #endif //ORBSLAM2_ROS_NODE_H_

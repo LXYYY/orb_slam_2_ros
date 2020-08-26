@@ -40,26 +40,6 @@ private:
   const ros::Publisher &loop_closure_pub_;
 };
 
-bool LoopClosureSendFunc(const ros::Publisher &loop_closure_pub,
-                         const double &from_timestamp,
-                         const double &to_timestamp, const cv::Mat &R,
-                         const cv::Mat &t) {
-  voxgraph_msgs::LoopClosure loop_closure_msg;
-  loop_closure_msg.from_timestamp = ros::Time(from_timestamp);
-  loop_closure_msg.to_timestamp = ros::Time(to_timestamp);
-  loop_closure_msg.transform.translation.x = t.at<float>(0);
-  loop_closure_msg.transform.translation.y = t.at<float>(1);
-  loop_closure_msg.transform.translation.z = t.at<float>(2);
-  tf2::Matrix3x3 tf2_rot(
-      R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2),
-      R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2),
-      R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2));
-  tf2::Quaternion tf2_quaternion;
-  tf2_rot.getRotation(tf2_quaternion);
-  loop_closure_msg.transform.rotation = tf2::toMsg(tf2_quaternion);
-  loop_closure_pub.publish(loop_closure_msg);
-}
-
 int main(int argc, char **argv) {
   ros::init(argc, argv, "RGBD");
   ros::start();
