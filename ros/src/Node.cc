@@ -92,7 +92,7 @@ void Node::PublishPositionAsTransform (cv::Mat position) {
   if(publish_tf_param_){
       tf::Transform transform = TransformFromMat (position);
       tf_broadcaster_.sendTransform(
-          tf::StampedTransform(transform, ros::Time::now(), map_frame_id_param_,
+          tf::StampedTransform(transform, current_frame_time_, map_frame_id_param_,
                                camera_frame_id_param_));
   }
 }
@@ -286,5 +286,6 @@ void Node::LoadOrbParameters (ORB_SLAM2::ORBParameters& parameters) {
 }
 
 void Node::PublishPositionAsTransformCallback(const ros::TimerEvent &event) {
-  PublishPositionAsTransform(position_);
+  if (!position_.empty())
+    PublishPositionAsTransform(position_);
 }
