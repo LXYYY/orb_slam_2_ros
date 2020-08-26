@@ -8,35 +8,57 @@
 
 class LoopClosureSendFunctor {
 public:
-  LoopClosureSendFunctor(const ros::NodeHandle &node_handle)
-      : node_handle_(node_handle) {
-    loop_closure_pub_ = node_handle_.advertise<voxgraph_msgs::LoopClosure>(
-        "loop_closure_output", 1);
-  }
+  LoopClosureSendFunctor(const ros::Publisher &loop_closure_pub)
+      : loop_closure_pub_(loop_closure_pub) {}
   bool operator()(const double & from_timestamp, const double & to_timestamp, const cv::Mat &R,
                   const cv::Mat &t) {
                     voxgraph_msgs::LoopClosure loop_closure_msg;
                     loop_closure_msg.from_timestamp=ros::Time(from_timestamp);
                     loop_closure_msg.to_timestamp=ros::Time(to_timestamp);
+                    tf2::Matrix3x3 tf2_rot(
+                        R.at<float>(0, 0), R.at<float>(0, 1),
+                        R.at<float>(0, 2), R.at<float>(1, 0),
+                        R.at<float>(1, 1), R.at<float>(1, 2),
+                        R.at<float>(2, 0), R.at<float>(2, 1),
+                        R.at<float>(2, 2));
+                    tf2::Quaternion tf2_quaternion;
+                    tf2_rot.getRotation(tf2_quaternion);
+                    loop_closure_msg.transform.rotation=tf2::toMsg(tf2_quaternion);
                     loop_closure_msg.transform.translation.x = t.at<float>(0);
                     loop_closure_msg.transform.translation.y = t.at<float>(1);
                     loop_closure_msg.transform.translation.z = t.at<float>(2);
-                    tf2::Matrix3x3 tf2_rot(
-                        R.at<double>(0, 0), R.at<double>(0, 1),
-                        R.at<double>(0, 2), R.at<double>(1, 0),
-                        R.at<double>(1, 1), R.at<double>(1, 2),
-                        R.at<double>(2, 0), R.at<double>(2, 1),
-                        R.at<double>(2, 2));
-                    tf2::Quaternion tf2_quaternion;
-                    tf2_rot.getRotation(tf2_quaternion);
-                    loop_closure_msg.transform.rotation =
-                        tf2::toMsg(tf2_quaternion);
+                    loop_closure_pub_.publish(loop_closure_msg);
+
+                    ROS_INFO("Loop Closure Message Published, from time %d, to "
+                             "time %d",
+                             loop_closure_msg.from_timestamp,
+                             loop_closure_msg.to_timestamp);
                   }
 
 private:
   ros::NodeHandle node_handle_;
-  ros::Publisher loop_closure_pub_;
+  const ros::Publisher &loop_closure_pub_;
 };
+
+bool LoopClosureSendFunc(const ros::Publisher &loop_closure_pub,
+                         const double &from_timestamp,
+                         const double &to_timestamp, const cv::Mat &R,
+                         const cv::Mat &t) {
+  voxgraph_msgs::LoopClosure loop_closure_msg;
+  loop_closure_msg.from_timestamp = ros::Time(from_timestamp);
+  loop_closure_msg.to_timestamp = ros::Time(to_timestamp);
+  loop_closure_msg.transform.translation.x = t.at<float>(0);
+  loop_closure_msg.transform.translation.y = t.at<float>(1);
+  loop_closure_msg.transform.translation.z = t.at<float>(2);
+  tf2::Matrix3x3 tf2_rot(
+      R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2),
+      R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2),
+      R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2));
+  tf2::Quaternion tf2_quaternion;
+  tf2_rot.getRotation(tf2_quaternion);
+  loop_closure_msg.transform.rotation = tf2::toMsg(tf2_quaternion);
+  loop_closure_pub.publish(loop_closure_msg);
+}
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "RGBD");
@@ -52,7 +74,8 @@ int main(int argc, char **argv) {
   // process frames.
   image_transport::ImageTransport image_transport(node_handle);
 
-  LoopClosureSendFunctor loop_closure_send_functor(node_handle);
+  ros::Publisher loop_closure_pub=node_handle.advertise<voxgraph_msgs::LoopClosure>("loop_closure_input", 1);
+  LoopClosureSendFunctor loop_closure_send_functor(loop_closure_pub);
   ORB_SLAM2::System::fLoopClosureSendFunc loop_closure_send_func =
       loop_closure_send_functor;
   RGBDNode node(ORB_SLAM2::System::RGBD, node_handle, image_transport,

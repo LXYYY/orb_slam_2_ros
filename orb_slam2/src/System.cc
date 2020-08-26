@@ -28,101 +28,107 @@
 namespace ORB_SLAM2
 {
 
-System::System(const string strVocFile, const eSensor sensor, ORBParameters& parameters,
-               const std::string & map_file, bool load_map, std::function<bool(const double &, const double &, const cv::Mat &,
-                            const cv::Mat &)>
-             loopClosureSendFunc): // map serialization addition
-               mSensor(sensor), mbReset(false),mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false),
-               map_file(map_file), load_map(load_map)
-{
-    // Output welcome message
-    cout << endl <<
-    "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of Zaragoza." << endl <<
-    "This program comes with ABSOLUTELY NO WARRANTY;" << endl  <<
-    "This is free software, and you are welcome to redistribute it" << endl <<
-    "under certain conditions. See LICENSE.txt." << endl << endl;
+System::System(const string strVocFile, const eSensor sensor,
+               ORBParameters &parameters, const std::string &map_file,
+               bool load_map, fLoopClosureSendFunc loopClosureSendFunc)
+    : // map serialization addition
+      mSensor(sensor), mbReset(false), mbActivateLocalizationMode(false),
+      mbDeactivateLocalizationMode(false), map_file(map_file),
+      load_map(load_map) {
+  // Output welcome message
+  cout << endl
+       << "ORB-SLAM2 Copyright (C) 2014-2016 Raul Mur-Artal, University of "
+          "Zaragoza."
+       << endl
+       << "This program comes with ABSOLUTELY NO WARRANTY;" << endl
+       << "This is free software, and you are welcome to redistribute it"
+       << endl
+       << "under certain conditions. See LICENSE.txt." << endl
+       << endl;
 
-    cout << "OpenCV version : " << CV_VERSION << endl;
-    cout << "Major version : " << CV_MAJOR_VERSION << endl;
-    cout << "Minor version : " << CV_MINOR_VERSION << endl;
-    cout << "Subminor version : " << CV_SUBMINOR_VERSION << endl;
+  cout << "OpenCV version : " << CV_VERSION << endl;
+  cout << "Major version : " << CV_MAJOR_VERSION << endl;
+  cout << "Minor version : " << CV_MINOR_VERSION << endl;
+  cout << "Subminor version : " << CV_SUBMINOR_VERSION << endl;
 
-    cout << "Input sensor was set to: ";
+  cout << "Input sensor was set to: ";
 
-    if(mSensor==MONOCULAR)
-        cout << "Monocular" << endl;
-    else if(mSensor==STEREO)
-        cout << "Stereo" << endl;
-    else if(mSensor==RGBD)
-        cout << "RGB-D" << endl;
+  if (mSensor == MONOCULAR)
+    cout << "Monocular" << endl;
+  else if (mSensor == STEREO)
+    cout << "Stereo" << endl;
+  else if (mSensor == RGBD)
+    cout << "RGB-D" << endl;
 
-    //Load ORB Vocabulary
-    cout << endl << "Loading ORB Vocabulary." << endl;
+  // Load ORB Vocabulary
+  cout << endl << "Loading ORB Vocabulary." << endl;
 
-    mpVocabulary = new ORBVocabulary();
+  mpVocabulary = new ORBVocabulary();
 
-    //try to load from the binary file
-    bool bVocLoad = mpVocabulary->loadFromBinFile(strVocFile+".bin");
+  // try to load from the binary file
+  bool bVocLoad = mpVocabulary->loadFromBinFile(strVocFile + ".bin");
 
-    if(!bVocLoad)
-    {
-        cerr << "Cannot find binary file for vocabulary. " << endl;
-        cerr << "Failed to open at: " << strVocFile+".bin" << endl;
-        cerr << "Trying to open the text file. This could take a while..." << endl;
-        bool bVocLoad2 = mpVocabulary->loadFromTextFile(strVocFile);
-        if(!bVocLoad2)
-        {
-            cerr << "Wrong path to vocabulary. " << endl;
-            cerr << "Failed to open at: " << strVocFile << endl;
-            exit(-1);
-        }
-        cerr << "Saving the vocabulary to binary for the next time to " << strVocFile+".bin" << endl;
-        mpVocabulary->saveToBinFile(strVocFile+".bin");
+  if (!bVocLoad) {
+    cerr << "Cannot find binary file for vocabulary. " << endl;
+    cerr << "Failed to open at: " << strVocFile + ".bin" << endl;
+    cerr << "Trying to open the text file. This could take a while..." << endl;
+    bool bVocLoad2 = mpVocabulary->loadFromTextFile(strVocFile);
+    if (!bVocLoad2) {
+      cerr << "Wrong path to vocabulary. " << endl;
+      cerr << "Failed to open at: " << strVocFile << endl;
+      exit(-1);
     }
+    cerr << "Saving the vocabulary to binary for the next time to "
+         << strVocFile + ".bin" << endl;
+    mpVocabulary->saveToBinFile(strVocFile + ".bin");
+  }
 
-    cout << "Vocabulary loaded!" << endl << endl;
+  cout << "Vocabulary loaded!" << endl << endl;
 
-    // begin map serialization addition
-    // load serialized map
-    if (load_map && LoadMap(map_file)) {
-        std::cout << "Using loaded map with " << mpMap->MapPointsInMap() << " points\n" << std::endl;
-    }
-    else {
-        //Create KeyFrame Database
-        mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
-        //Create the Map
-        mpMap = new Map();
-    }
-    // end map serialization addition
+  // begin map serialization addition
+  // load serialized map
+  if (load_map && LoadMap(map_file)) {
+    std::cout << "Using loaded map with " << mpMap->MapPointsInMap()
+              << " points\n"
+              << std::endl;
+  } else {
+    // Create KeyFrame Database
+    mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
+    // Create the Map
+    mpMap = new Map();
+  }
+  // end map serialization addition
 
-    //Create Drawers. These are used by the Viewer
-    mpFrameDrawer = new FrameDrawer(mpMap);
+  // Create Drawers. These are used by the Viewer
+  mpFrameDrawer = new FrameDrawer(mpMap);
 
-    //Initialize the Tracking thread
-    //(it will live in the main thread of execution, the one that called this constructor)
-    mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer,
-                             mpMap, mpKeyFrameDatabase, mSensor, parameters);
+  // Initialize the Tracking thread
+  //(it will live in the main thread of execution, the one that called this
+  //constructor)
+  mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMap,
+                           mpKeyFrameDatabase, mSensor, parameters);
 
-    //Initialize the Local Mapping thread and launch
-    mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
-    mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run,mpLocalMapper);
+  // Initialize the Local Mapping thread and launch
+  mpLocalMapper = new LocalMapping(mpMap, mSensor == MONOCULAR);
+  mptLocalMapping = new thread(&ORB_SLAM2::LocalMapping::Run, mpLocalMapper);
 
-    //Initialize the Loop Closing thread and launch
-    mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary, mSensor!=MONOCULAR);
-    mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
+  // Initialize the Loop Closing thread and launch
+  mpLoopCloser = new LoopClosing(mpMap, mpKeyFrameDatabase, mpVocabulary,
+                                 mSensor != MONOCULAR);
+  mptLoopClosing = new thread(&ORB_SLAM2::LoopClosing::Run, mpLoopCloser);
 
-    //Set pointers between threads
-    mpTracker->SetLocalMapper(mpLocalMapper);
-    mpTracker->SetLoopClosing(mpLoopCloser);
+  // Set pointers between threads
+  mpTracker->SetLocalMapper(mpLocalMapper);
+  mpTracker->SetLoopClosing(mpLoopCloser);
 
-    mpLocalMapper->SetTracker(mpTracker);
-    mpLocalMapper->SetLoopCloser(mpLoopCloser);
+  mpLocalMapper->SetTracker(mpTracker);
+  mpLocalMapper->SetLoopCloser(mpLoopCloser);
 
-    mpLoopCloser->SetTracker(mpTracker);
-    mpLoopCloser->SetLocalMapper(mpLocalMapper);
-    mpLoopCloser->SetLoopClosureSendFunc(loopClosureSendFunc);
+  mpLoopCloser->SetTracker(mpTracker);
+  mpLoopCloser->SetLocalMapper(mpLocalMapper);
+  mpLoopCloser->SetLoopClosureSendFunc(loopClosureSendFunc);
 
-    currently_localizing_only_ = false;
+  currently_localizing_only_ = false;
 }
 
 void System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp)
