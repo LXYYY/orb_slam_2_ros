@@ -28,7 +28,7 @@
        <!-- Close/Far threshold. Baseline times. -->
        <param name="ThDepth" type="double" value="40.0" />
        <!-- Deptmap values factor (what pixel value in the depth image corresponds to 1m) -->
-       <param name="depth_map_factor" type="double" value="1.0" />
+       <param name="depth_map_factor" type="double" value="1000.0" />
 
         <!-- Camera calibration parameters -->
         <!--If the node should wait for a camera_info topic to take the camera calibration data-->
