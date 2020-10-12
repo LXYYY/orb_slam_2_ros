@@ -1,5 +1,6 @@
 #include "RGBDNode.h"
 
+#include <opencv2/opencv.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Vector3.h>
@@ -110,6 +111,9 @@ void RGBDNode::ImageCallback (const sensor_msgs::ImageConstPtr& msgRGB, const se
 
   current_frame_time_ = msgRGB->header.stamp;
 
+  // cv::namedWindow("test");
+  // cv::imshow("test", cv_ptrRGB->image);
+  // cv::waitKey(1);
   orb_slam_->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,cv_ptrRGB->header.stamp.toSec());
 
   Update ();
